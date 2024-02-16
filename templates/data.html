@@ -9,8 +9,10 @@
 </div>
 
     {{ wtf.quick_form(form) }}
+
     {% if  table %}
+
     <h2>Uploaded CSV Data</h2>
-    {{ table|safe }}
+    {{ table | safe }}
     {% endif %}
 {% endblock %}

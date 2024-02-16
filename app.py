@@ -39,12 +39,15 @@ def data():  # put application's code here
     data_table = None
     if form.validate_on_submit():
         name = form.name.data
-        data_table = pd.read_csv(form.csv_file.data).to_html(index=False)
+        data_table = (pd.read_csv(form.csv_file.data)
+                      .to_html(index=False
+                               , classes='table table-bordered table-striped'
+                               , table_id='data_table'))
         form.name.data = ''
     return render_template('data.html'
                            , form=form
                            , name=name
-                           , table=data_table)#, csv_file=csv_file)
+                           , table=data_table)
 
 
 @app.route('/viz')
