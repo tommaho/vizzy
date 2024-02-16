@@ -1,5 +1,20 @@
 from flask import Flask, render_template
 from flask_bootstrap import Bootstrap
+from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed, FileRequired, FileSize
+from wtforms import StringField, SubmitField
+from wtforms.validators import DataRequired
+import pandas as pd
+
+class NameForm(FlaskForm):
+    name = StringField('What is your name?', validators=[DataRequired()])
+    csv_file = FileField('Choose a file', validators=[
+        FileRequired(),
+        FileAllowed(['csv'], 'CSV files only!'),
+        FileSize(max_size=100 * 1024, message='File must be less than 100kb'),
+    ])
+
+    submit = SubmitField('Submit')
 
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
@@ -17,9 +32,19 @@ def home():  # put application's code here
     return render_template('index.html', name='Tom')
 
 
-@app.route('/data')
+@app.route('/data', methods=['GET', 'POST'])
 def data():  # put application's code here
-    return render_template('data.html', name='Tom')
+    name = None
+    form = NameForm()
+    data_table = None
+    if form.validate_on_submit():
+        name = form.name.data
+        data_table = pd.read_csv(form.csv_file.data).to_html(index=False)
+        form.name.data = ''
+    return render_template('data.html'
+                           , form=form
+                           , name=name
+                           , table=data_table)#, csv_file=csv_file)
 
 
 @app.route('/viz')
