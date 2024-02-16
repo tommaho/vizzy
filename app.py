@@ -7,7 +7,7 @@ from wtforms.validators import DataRequired
 import pandas as pd
 
 class NameForm(FlaskForm):
-    name = StringField('What is your name?', validators=[DataRequired()])
+    data_name = StringField('Enter a name for this data set:', validators=[DataRequired()])
     csv_file = FileField('Choose a file', validators=[
         FileRequired(),
         FileAllowed(['csv'], 'CSV files only!'),
@@ -29,24 +29,24 @@ app.debug = True
 
 @app.route('/')
 def home():  # put application's code here
-    return render_template('index.html', name='Tom')
+    return render_template('index.html')
 
 
 @app.route('/data', methods=['GET', 'POST'])
 def data():  # put application's code here
-    name = None
+    data_name = None
     form = NameForm()
     data_table = None
     if form.validate_on_submit():
-        name = form.name.data
+        data_name = form.data_name.data
         data_table = (pd.read_csv(form.csv_file.data)
                       .to_html(index=False
                                , classes='table table-bordered table-striped'
                                , table_id='data_table'))
-        form.name.data = ''
+        form.data_name.data = ''
     return render_template('data.html'
                            , form=form
-                           , name=name
+                           , data_name=data_name
                            , table=data_table)
 
 

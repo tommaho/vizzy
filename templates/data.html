@@ -4,15 +4,22 @@
 {% block title %}Vizzy Data{% endblock %}
 
 {% block page_content %}
+
+    {% if  table == None %}
+
 <div class="page-header">
-    <h1>Hello, {% if name %}{{ name }}{% else %}Stranger{% endif %}!</h1>
+    <h1>Dataset Upload</h1>
 </div>
 
     {{ wtf.quick_form(form) }}
 
-    {% if  table %}
+{% else %}
 
-    <h2>Uploaded CSV Data</h2>
+    <div class="page-header">
+    <h1>Dataset Review: {{ data_name }} </h1>
+</div>
     {{ table | safe }}
+
+
     {% endif %}
 {% endblock %}
