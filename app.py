@@ -34,6 +34,9 @@ app.debug = True
 def home():  # put application's code here
     return render_template('index.html')
 
+@app.route('/manage')
+def manage():  # put application's code here
+    return render_template('manage.html')
 
 @app.route('/data', methods=['GET', 'POST'])
 def data():  # put application's code here
