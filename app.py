@@ -6,7 +6,7 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 import pandas as pd
 
-class NameForm(FlaskForm):
+class UploadForm(FlaskForm):
     data_name = StringField('Enter a name for this data set:', validators=[DataRequired()])
     csv_file = FileField('Choose a file', validators=[
         FileRequired(),
@@ -14,7 +14,10 @@ class NameForm(FlaskForm):
         FileSize(max_size=100 * 1024, message='File must be less than 100kb'),
     ])
 
-    submit = SubmitField('Submit')
+    submit = SubmitField('Upload')
+
+class StoreForm(FlaskForm):
+    submit = SubmitField('Store this csv data')
 
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
@@ -34,20 +37,33 @@ def home():  # put application's code here
 
 @app.route('/data', methods=['GET', 'POST'])
 def data():  # put application's code here
-    data_name = None
-    form = NameForm()
-    data_table = None
-    if form.validate_on_submit():
-        data_name = form.data_name.data
-        data_table = (pd.read_csv(form.csv_file.data)
-                      .to_html(index=False
+    csv_name = None
+    upload_form = UploadForm()
+    store_form = StoreForm()
+    #data_table = None
+    csv_html = None
+    is_final_commit = False
+
+    if upload_form.validate_on_submit():
+        csv_name = upload_form.data_name.data
+        csv_to_pd = pd.read_csv(upload_form.csv_file.data)
+        csv_html = (csv_to_pd.to_html(index=False
                                , classes='table table-bordered table-striped'
                                , table_id='data_table'))
-        form.data_name.data = ''
+        #data_sql = csv_to_pd.to_sql('data_table')
+        upload_form.data_name.data = ''
+
+    elif store_form.validate_on_submit():
+        is_final_commit = True
+
+        #write to database
+
     return render_template('data.html'
-                           , form=form
-                           , data_name=data_name
-                           , table=data_table)
+                           , upload_form=upload_form
+                           , store_form=store_form
+                           , data_name=csv_name
+                           , table=csv_html
+                           , is_final_commit=is_final_commit)
 
 
 @app.route('/viz')
