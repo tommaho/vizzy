@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, flash
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired, FileSize
@@ -36,6 +36,7 @@ def home():  # put application's code here
 
 @app.route('/manage')
 def manage():  # put application's code here
+    flash('There are currently no datasets to manage. Upload and store a dataset.')
     return render_template('manage.html')
 
 @app.route('/data', methods=['GET', 'POST'])
@@ -55,12 +56,12 @@ def data():  # put application's code here
                                , table_id='data_table'))
         #data_sql = csv_to_pd.to_sql('data_table')
         upload_form.data_name.data = ''
-
+        flash('CSV successfully uploaded.')
     elif store_form.validate_on_submit():
         is_final_commit = True
 
         #write to database
-
+        flash('CSV stored, and available to Visualize or Manage.')
     return render_template('data.html'
                            , upload_form=upload_form
                            , store_form=store_form
@@ -71,7 +72,8 @@ def data():  # put application's code here
 
 @app.route('/viz')
 def viz():  # put application's code here
-    return render_template('viz.html', name='Tom')
+    flash('There are currently no datasets to vizualize. Upload and store a dataset.')
+    return render_template('viz.html')
 
 
 @app.errorhandler(404)
