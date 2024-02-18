@@ -1,4 +1,4 @@
-from flask import Flask, render_template, flash
+from flask import Flask, render_template, flash, request
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired, FileSize
@@ -17,11 +17,11 @@ class UploadForm(FlaskForm):
         FileSize(max_size=100 * 1024, message='File must be less than 100kb'),
     ])
 
-    submit = SubmitField('Upload')
+    upload = SubmitField('Upload')
 
 class StoreForm(FlaskForm):
-    submit = SubmitField('Store Data')
-    cancel = SubmitField('Abort')
+    store = SubmitField('Store Data')
+    abort = SubmitField('Abort')
 
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
@@ -51,29 +51,29 @@ def data():  # put application's code here
     csv_html = None
     is_final_commit = False
 
-    if upload_form.validate_on_submit():
-        csv_name = upload_form.data_name.data
-        csv_df = pd.read_csv(upload_form.csv_file.data, encoding='utf-8')
-
-        #should break this out into a more robust custom converter on read_csv
-        csv_df.applymap(lambda x: bleach.clean(x) if isinstance(x, str) else x)
-
-        csv_html = (csv_df.to_html(index=False
-                               , classes='table table-bordered table-striped'
-                               , table_id='data_table'))
-        #data_sql = csv_to_pd.to_sql('data_table')
-        upload_form.data_name.data = ''
-        flash('CSV successfully uploaded.', 'success')
-    #handle errror here!
+    if store_form.validate_on_submit() and 'store' in request.form:
+        is_final_commit = True
+        flash('CSV stored, and available to Visualize or Manage.', 'success')
+    elif store_form.validate_on_submit() and 'abort' in request.form:
+        flash('File processing aborted.', 'danger')
     else:
-        if upload_form.errors:
-            flash('Invalid upload! csv files under 100kb only!', 'danger')
 
-    # elif store_form.validate_on_submit():
-    #     is_final_commit = True
-    #
-    #     #write to database
-    #     flash('CSV stored, and available to Visualize or Manage.', 'success')
+        if upload_form.validate_on_submit():
+            csv_name = upload_form.data_name.data
+            csv_df = pd.read_csv(upload_form.csv_file.data, encoding='utf-8')
+
+            #should break this out into a more robust custom converter on read_csv
+            csv_df.map(lambda x: bleach.clean(x) if isinstance(x, str) else x)
+
+            csv_html = (csv_df.to_html(index=False
+                                   , classes='table table-bordered table-striped'
+                                   , table_id='data_table'))
+            #data_sql = csv_to_pd.to_sql('data_table')
+            upload_form.data_name.data = ''
+            flash('CSV successfully uploaded.', 'success')
+        #handle errror here!
+        elif upload_form.errors:
+                flash('Invalid upload! csv files under 100kb only!', 'danger')
 
     return render_template('data.html'
                            , upload_form=upload_form
