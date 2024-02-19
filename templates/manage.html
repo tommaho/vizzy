@@ -5,6 +5,11 @@
 {% block page_content %}
 <div class="page-header">
     <h1>Manage Data</h1>
+    <ul>
+        {% for table in tables %}
+            <li>{{ table[0] }}</li>
+        {% endfor %}
+    </ul>
 </div>
 
 {% endblock %}

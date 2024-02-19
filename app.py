@@ -25,7 +25,7 @@ else:
 
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-sqlite_db = 'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+sqlite_db = 'data.sqlite'
 
 class UploadForm(FlaskForm):
     data_name = StringField('Enter a name for this data set:', validators=[DataRequired()])
@@ -48,6 +48,13 @@ def store_data(df, table_name):
     df.to_sql(table_name, conn, if_exists='replace', index=False)
     conn.close()
 
+def get_db_tables():
+    conn = sqlite3.connect(sqlite_db)
+    cur = conn.cursor()
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables = cur.fetchall()
+    conn.close()
+    return tables
 @app.route('/')
 def home():  # put application's code here
     return render_template('index.html')
@@ -55,8 +62,13 @@ def home():  # put application's code here
 
 @app.route('/manage')
 def manage():
-    flash('There are currently no datasets to manage. Upload and store a dataset.', 'warning')
-    return render_template('manage.html')
+    tables = get_db_tables()
+    if tables:
+        flash(f'There are {len(tables)} datasets to manage.', category='success')
+    else:
+        flash('There are currently no datasets to manage. Upload and store a dataset.', 'warning')
+
+    return render_template('manage.html', tables=tables)
 
 
 @app.route('/data', methods=['GET', 'POST'])
@@ -71,8 +83,9 @@ def data():  # put application's code here
 
     if store_form.validate_on_submit() and 'store' in request.form:
         data_json = session.get('data')
+        data_name = session.get('data_name')
         if data_json:
-            store_data(pd.read_json(data_json), 'test')
+            store_data(pd.read_json(data_json), data_name)
 
         is_final_commit = True
         flash('CSV stored, and available to Visualize or Manage.', 'success')
@@ -92,6 +105,7 @@ def data():  # put application's code here
             # stage this in a database for larger datasets, and where the preview steps
             # might include schema changes
             session['data'] = csv_df.to_json()
+            session['data_name'] = csv_name
 
             csv_html = (csv_df.to_html(index=False
                                        , classes='table table-bordered table-striped'
@@ -113,9 +127,14 @@ def data():  # put application's code here
 
 
 @app.route('/viz')
-def viz():  # put application's code here
-    flash('There are currently no datasets to visualize. Upload and store a dataset.', 'warning')
-    return render_template('viz.html')
+def viz():
+    tables = get_db_tables()
+    if tables:
+        flash(f'There are {len(tables)} datasets to visualize.', category='success')
+    else:
+        flash('There are currently no datasets to manage. Upload and store a dataset.', 'warning')
+
+    return render_template('viz.html', tables=tables)
 
 
 @app.errorhandler(404)
