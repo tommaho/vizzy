@@ -1,9 +1,7 @@
+from config import Config
+from forms import UploadForm, StoreForm
 from flask import Flask, render_template, flash, request, session
 from flask_bootstrap import Bootstrap
-from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileAllowed, FileRequired, FileSize
-from wtforms import StringField, SubmitField
-from wtforms.validators import DataRequired
 
 import os
 import pandas as pd
@@ -14,39 +12,22 @@ import bleach
 
 
 app = Flask(__name__)
+app.config.from_object(Config)
+
 bootstrap = Bootstrap(app)
 
 app.debug = True
 
-if app.debug:
-    app.config['SECRET_KEY'] = 'Its the end of the world as we know it and I feel fine'
-else:
-    app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
-
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 sqlite_db = 'data.sqlite'
-
-class UploadForm(FlaskForm):
-    data_name = StringField('Enter a name for this data set:', validators=[DataRequired()])
-    csv_file = FileField('Choose a file', validators=[
-        FileRequired(),
-        FileAllowed(['csv'], 'CSV files only!'),
-        FileSize(max_size=100 * 1024, message='File must be less than 100kb'),
-    ])
-
-    upload = SubmitField('Upload')
-
-
-class StoreForm(FlaskForm):
-    store = SubmitField('Store Data')
-    abort = SubmitField('Abort')
 
 
 def store_data(df, table_name):
     conn = sqlite3.connect(sqlite_db)
     df.to_sql(table_name, conn, if_exists='replace', index=False)
     conn.close()
+
 
 def get_db_tables():
     conn = sqlite3.connect(sqlite_db)
@@ -55,6 +36,8 @@ def get_db_tables():
     tables = cur.fetchall()
     conn.close()
     return tables
+
+
 @app.route('/')
 def home():  # put application's code here
     return render_template('index.html')
