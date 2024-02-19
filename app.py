@@ -1,4 +1,4 @@
-from flask import Flask, render_template, flash, request
+from flask import Flask, render_template, flash, request, session
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired, FileSize
@@ -7,10 +7,25 @@ from wtforms.validators import DataRequired
 
 import os
 import pandas as pd
+import sqlite3
 
 # DEPRECATED
 import bleach
 
+
+app = Flask(__name__)
+bootstrap = Bootstrap(app)
+
+app.debug = True
+
+if app.debug:
+    app.config['SECRET_KEY'] = 'Its the end of the world as we know it and I feel fine'
+else:
+    app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
+
+
+basedir = os.path.abspath(os.path.dirname(__file__))
+sqlite_db = 'sqlite:///' + os.path.join(basedir, 'data.sqlite')
 
 class UploadForm(FlaskForm):
     data_name = StringField('Enter a name for this data set:', validators=[DataRequired()])
@@ -28,16 +43,10 @@ class StoreForm(FlaskForm):
     abort = SubmitField('Abort')
 
 
-app = Flask(__name__)
-bootstrap = Bootstrap(app)
-
-app.debug = True
-
-if app.debug:
-    app.config['SECRET_KEY'] = 'Its the end of the world as we know it and I feel fine'
-else:
-    app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
-
+def store_data(df, table_name):
+    conn = sqlite3.connect(sqlite_db)
+    df.to_sql(table_name, conn, if_exists='replace', index=False)
+    conn.close()
 
 @app.route('/')
 def home():  # put application's code here
@@ -56,12 +65,18 @@ def data():  # put application's code here
     csv_name = None
     upload_form = UploadForm()
     store_form = StoreForm()
+    csv_df = None
     csv_html = None
     is_final_commit = False
 
     if store_form.validate_on_submit() and 'store' in request.form:
+        data_json = session.get('data')
+        if data_json:
+            store_data(pd.read_json(data_json), 'test')
+
         is_final_commit = True
         flash('CSV stored, and available to Visualize or Manage.', 'success')
+
     elif store_form.validate_on_submit() and 'abort' in request.form:
         flash('File processing aborted.', 'danger')
     else:
@@ -73,6 +88,10 @@ def data():  # put application's code here
 
             # should break this out into a more robust custom converter on read_csv
             csv_df.map(lambda x: bleach.clean(x) if isinstance(x, str) else x)
+
+            # stage this in a database for larger datasets, and where the preview steps
+            # might include schema changes
+            session['data'] = csv_df.to_json()
 
             csv_html = (csv_df.to_html(index=False
                                        , classes='table table-bordered table-striped'
@@ -88,6 +107,7 @@ def data():  # put application's code here
                            , upload_form=upload_form
                            , store_form=store_form
                            , data_name=csv_name
+                           , data_frame=csv_df
                            , table=csv_html
                            , is_final_commit=is_final_commit)
 
