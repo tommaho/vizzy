@@ -1,25 +1,11 @@
-from config import Config
-from forms import UploadForm, StoreForm
-from flask import Flask, render_template, flash, request, session
-from flask_bootstrap import Bootstrap
-
-import os
+import bleach
 import pandas as pd
+
+from app import app
+from app.forms import  UploadForm, StoreForm
+from flask import render_template, session, flash, redirect, url_for, request
 import sqlite3
 
-# DEPRECATED
-import bleach
-
-
-app = Flask(__name__)
-app.config.from_object(Config)
-
-bootstrap = Bootstrap(app)
-
-app.debug = True
-
-
-basedir = os.path.abspath(os.path.dirname(__file__))
 sqlite_db = 'data.sqlite'
 
 
@@ -123,7 +109,3 @@ def viz():
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('na.html'), 404
-
-
-if __name__ == '__main__':
-    app.run()
